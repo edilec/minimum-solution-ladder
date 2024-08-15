@@ -1,0 +1,17 @@
+{
+  "name": "minimum-solution-ladder",
+  "version": "0.0.0",
+  "description": "Apply a small-solution decision ladder before an agent adds code or dependencies.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/edilec/minimum-solution-ladder"
+  }
+}
