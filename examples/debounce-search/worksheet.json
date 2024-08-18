@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "1",
+  "requirement": {
+    "id": "coalesce-search-keystrokes",
+    "statement": "Coalesce rapid keystrokes so the search endpoint is called once the typing stops.",
+    "criteria": [
+      { "id": "c-coalesce", "statement": "Rapid calls collapse into one call after the wait." },
+      { "id": "c-cancel", "statement": "A pending call can be cancelled when the surface goes away." }
+    ]
+  },
+  "proposed": {
+    "rung": "project-reuse",
+    "summary": "Call the existing useDebounced hook from the search surface."
+  },
+  "candidates": [
+    {
+      "id": "existing-hook",
+      "rung": "project-reuse",
+      "summary": "src/hooks.mjs already exports a debounce with a cancel.",
+      "satisfies": ["c-coalesce", "c-cancel"],
+      "evidence": [
+        { "kind": "source", "file": "src/hooks.mjs", "contains": "export function useDebounced" },
+        { "kind": "source", "file": "src/hooks.mjs", "contains": "run.cancel = () =>" }
+      ],
+      "savings": {
+        "claim": "Removes the 3 duplicate debounce implementations counted in the audit.",
+        "measurement": { "kind": "source", "file": "notes/audit.md", "contains": "3 duplicate debounce implementations" }
+      }
+    },
+    {
+      "id": "leave-as-is",
+      "rung": "no-change",
+      "summary": "The surface already waits for a blur event before searching.",
+      "satisfies": ["c-coalesce"],
+      "evidence": [
+        { "kind": "source", "file": "src/hooks.mjs", "contains": "setTimeout" }
+      ]
+    }
+  ]
+}

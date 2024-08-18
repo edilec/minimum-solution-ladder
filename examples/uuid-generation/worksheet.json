@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1",
+  "requirement": {
+    "id": "session-identifier",
+    "statement": "Every new session needs a unique identifier that is safe to put in a cookie.",
+    "criteria": [
+      { "id": "c-unique", "statement": "Each call returns a distinct RFC 4122 version 4 identifier." },
+      { "id": "c-no-install", "statement": "No package is added that is not already installed." }
+    ]
+  },
+  "proposed": {
+    "rung": "new-machinery",
+    "summary": "Write an id module with a counter, a process fingerprint and a base32 encoder."
+  },
+  "candidates": [
+    {
+      "id": "node-crypto-random-uuid",
+      "rung": "standard-library",
+      "summary": "node:crypto.randomUUID already returns an RFC 4122 version 4 identifier.",
+      "satisfies": ["c-unique", "c-no-install"],
+      "evidence": [
+        { "kind": "builtin", "module": "node:crypto", "export": "randomUUID" },
+        { "kind": "source", "file": "src/session.mjs", "contains": "import { randomUUID } from 'node:crypto'" }
+      ]
+    },
+    {
+      "id": "installed-uuid-package",
+      "rung": "installed-dependency",
+      "summary": "The uuid package is already a dependency of this application.",
+      "satisfies": ["c-unique", "c-no-install"],
+      "evidence": [
+        { "kind": "dependency", "file": "app-manifest.json", "name": "uuid" }
+      ]
+    }
+  ]
+}

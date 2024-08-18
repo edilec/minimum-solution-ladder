@@ -1,0 +1,8 @@
+{
+  "name": "example-app",
+  "version": "1.0.0",
+  "description": "A stand-in for the application's own package.json, cited as dependency evidence.",
+  "dependencies": {
+    "uuid": "^9.0.0"
+  }
+}

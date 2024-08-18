@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1",
+  "requirement": {
+    "id": "structured-logging",
+    "statement": "Emit one JSON object per log line so the collector can index fields.",
+    "criteria": [
+      { "id": "c-json-line", "statement": "Each line is a single JSON object." }
+    ]
+  },
+  "proposed": {
+    "rung": "new-machinery",
+    "summary": "Add a logging library and a transport."
+  },
+  "candidates": [
+    {
+      "id": "console-json",
+      "rung": "platform-native",
+      "summary": "console.log(JSON.stringify(entry)) is already a JSON line.",
+      "satisfies": ["c-json-line"],
+      "evidence": [
+        { "kind": "assertion", "note": "I am fairly sure console.log writes one line per call." }
+      ]
+    }
+  ]
+}
