@@ -71,9 +71,18 @@ export function isInside(realRoot, target) {
   return target === realRoot || target.startsWith(realRoot.endsWith(sep) ? realRoot : realRoot + sep)
 }
 
-/** A relative path with forward slashes, so a report reads the same on every platform. */
+/**
+ * A relative path with forward slashes, so a report reads the same on every
+ * platform -- and sanitised, because a path is untrusted text like any other.
+ *
+ * The worksheet chooses these spellings. A file named with a line feed in it is
+ * a legal path on every platform this runs on, and reported verbatim it forges a
+ * whole line in the human report from a field nobody thinks of as an excerpt.
+ * The unsanitised spelling is still what gets opened; only the reported one is
+ * cleaned.
+ */
 export function relativePosix(realRoot, target) {
-  return relative(realRoot, target).split(sep).join('/')
+  return sanitize(relative(realRoot, target).split(sep).join('/'), 200)
 }
 
 const verified = (detail, extra = {}) => ({ state: 'verified', detail, ...extra })

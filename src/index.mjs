@@ -35,7 +35,7 @@
  */
 
 import { readFile, realpath, stat } from 'node:fs/promises'
-import { dirname, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 
 import { checkEvidence, describeEvidence, importBuiltin, isInside, relativePosix } from './evidence.mjs'
 import {
@@ -258,6 +258,30 @@ export async function loadConfigFile(path) {
   return validateConfig(parsed)
 }
 
+/**
+ * The real path of `path`, or the closest thing to it that exists.
+ *
+ * `realpath` fails outright on a file that is not there, which is precisely the
+ * case a report has to describe, so the containing directory is resolved
+ * instead and the name appended. Resolving matters even when nothing is
+ * missing: on macOS the temporary directory is reached through `/var`, which is
+ * a symbolic link to `/private/var`, so a lexical comparison of an unresolved
+ * worksheet path against a resolved root finds the worksheet "outside" a root
+ * that contains it.
+ */
+async function realOrNearest(path) {
+  try {
+    return await realpath(path)
+  } catch {
+    // fall through to the directory
+  }
+  try {
+    return join(await realpath(dirname(path)), basename(path))
+  } catch {
+    return resolve(path)
+  }
+}
+
 function makeFinding(ruleId, message, location, extra = {}) {
   const severity = RULE_SEVERITY[ruleId]
   if (severity === undefined) throw new TypeError(`Unknown rule id "${ruleId}"`)
@@ -295,7 +319,7 @@ export async function runLadder(options = {}) {
   if (typeof clock !== 'function') throw new TypeError('clock must be a function returning milliseconds')
   const limits = validateLimits(limitOverrides)
 
-  const worksheetFull = resolve(worksheetPath)
+  const worksheetFull = await realOrNearest(resolve(worksheetPath))
   const rootPath = options.root === undefined || options.root === null ? dirname(worksheetFull) : options.root
   let realRoot
   try {

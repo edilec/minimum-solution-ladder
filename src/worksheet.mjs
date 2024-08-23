@@ -355,17 +355,13 @@ export function validateWorksheet(document, limits) {
     })
   }
 
-  let fatal = problems.length > 0
-
   const requirement = document.requirement
   const criterionIds = []
   let criteria = []
   if (!isRecord(requirement)) {
-    fatal = true
     problems.push({ ruleId: 'worksheet-malformed', message: '"requirement" must be an object.', pointer: '/requirement' })
   } else {
     for (const key of unknownKeys(requirement, REQUIREMENT_KEYS)) {
-      fatal = true
       problems.push({
         ruleId: 'worksheet-unknown-key',
         message: `"requirement" accepts ${REQUIREMENT_KEYS.join(', ')}.`,
@@ -374,7 +370,6 @@ export function validateWorksheet(document, limits) {
       })
     }
     if (typeof requirement.id !== 'string' || !ID_PATTERN.test(requirement.id)) {
-      fatal = true
       problems.push({
         ruleId: 'worksheet-malformed',
         message: 'The requirement "id" must match [A-Za-z0-9][A-Za-z0-9._-]{0,63}.',
@@ -383,7 +378,6 @@ export function validateWorksheet(document, limits) {
       })
     }
     if (!isText(requirement.statement)) {
-      fatal = true
       problems.push({
         ruleId: 'worksheet-malformed',
         message: 'The requirement needs a non-empty "statement" of at most 400 characters.',
@@ -391,14 +385,12 @@ export function validateWorksheet(document, limits) {
       })
     }
     if (!Array.isArray(requirement.criteria) || requirement.criteria.length === 0) {
-      fatal = true
       problems.push({
         ruleId: 'worksheet-malformed',
         message: 'The requirement needs a non-empty "criteria" array. Coverage of nothing cannot be judged.',
         pointer: '/requirement/criteria',
       })
     } else if (requirement.criteria.length > limits.maxCriteria) {
-      fatal = true
       problems.push({
         ruleId: 'too-many-criteria',
         message: `The requirement lists ${requirement.criteria.length} criteria, over the limit of ${limits.maxCriteria}.`,
@@ -408,12 +400,10 @@ export function validateWorksheet(document, limits) {
       requirement.criteria.forEach((criterion, index) => {
         const pointer = `/requirement/criteria/${index}`
         if (!isRecord(criterion)) {
-          fatal = true
           problems.push({ ruleId: 'worksheet-malformed', message: 'A criterion must be an object.', pointer })
           return
         }
         for (const key of unknownKeys(criterion, CRITERION_KEYS)) {
-          fatal = true
           problems.push({
             ruleId: 'worksheet-unknown-key',
             message: `A criterion accepts ${CRITERION_KEYS.join(', ')}.`,
@@ -422,7 +412,6 @@ export function validateWorksheet(document, limits) {
           })
         }
         if (typeof criterion.id !== 'string' || !ID_PATTERN.test(criterion.id)) {
-          fatal = true
           problems.push({
             ruleId: 'worksheet-malformed',
             message: 'A criterion "id" must match [A-Za-z0-9][A-Za-z0-9._-]{0,63}.',
@@ -432,7 +421,6 @@ export function validateWorksheet(document, limits) {
           return
         }
         if (criterionIds.includes(criterion.id)) {
-          fatal = true
           problems.push({
             ruleId: 'worksheet-malformed',
             message: 'Two criteria share an id, so coverage of either one is ambiguous.',
@@ -442,7 +430,6 @@ export function validateWorksheet(document, limits) {
           return
         }
         if (!isText(criterion.statement)) {
-          fatal = true
           problems.push({
             ruleId: 'worksheet-malformed',
             message: 'A criterion needs a non-empty "statement" of at most 400 characters.',
@@ -459,11 +446,9 @@ export function validateWorksheet(document, limits) {
   const proposed = document.proposed
   let proposedValue = null
   if (!isRecord(proposed)) {
-    fatal = true
     problems.push({ ruleId: 'worksheet-malformed', message: '"proposed" must be an object.', pointer: '/proposed' })
   } else {
     for (const key of unknownKeys(proposed, PROPOSED_KEYS)) {
-      fatal = true
       problems.push({
         ruleId: 'worksheet-unknown-key',
         message: `"proposed" accepts ${PROPOSED_KEYS.join(', ')}.`,
@@ -472,7 +457,6 @@ export function validateWorksheet(document, limits) {
       })
     }
     if (typeof proposed.rung !== 'string' || !RUNGS.includes(proposed.rung)) {
-      fatal = true
       problems.push({
         ruleId: 'worksheet-malformed',
         message: `The proposed "rung" must be one of ${RUNGS.join(', ')}.`,
@@ -480,7 +464,6 @@ export function validateWorksheet(document, limits) {
         evidence: sanitize(String(proposed.rung ?? 'missing'), 60),
       })
     } else if (!isText(proposed.summary)) {
-      fatal = true
       problems.push({
         ruleId: 'worksheet-malformed',
         message: 'The proposal needs a non-empty "summary" of at most 400 characters.',
@@ -491,10 +474,8 @@ export function validateWorksheet(document, limits) {
 
   const candidates = []
   if (!Array.isArray(document.candidates)) {
-    fatal = true
     problems.push({ ruleId: 'worksheet-malformed', message: '"candidates" must be an array.', pointer: '/candidates' })
   } else if (document.candidates.length > limits.maxCandidates) {
-    fatal = true
     problems.push({
       ruleId: 'too-many-candidates',
       message: `The worksheet lists ${document.candidates.length} candidates, over the limit of ${limits.maxCandidates}.`,
@@ -504,12 +485,8 @@ export function validateWorksheet(document, limits) {
     const seen = new Set()
     document.candidates.forEach((candidate, index) => {
       const validated = validateCandidate(candidate, index, criterionIds, problems, limits)
-      if (validated === null) {
-        fatal = true
-        return
-      }
+      if (validated === null) return
       if (seen.has(validated.id)) {
-        fatal = true
         problems.push({
           ruleId: 'candidate-duplicate-id',
           message: 'Two candidates share an id, so a recommendation naming it would be ambiguous.',
@@ -523,7 +500,18 @@ export function validateWorksheet(document, limits) {
     })
   }
 
-  if (fatal || proposedValue === null || criteria.length === 0) return { worksheet: null, problems }
+  /**
+   * Any problem at all withholds the worksheet.
+   *
+   * Not only the ones that make a field unusable: an undefined key means part of
+   * this document was not understood, and a ladder walked over a document this
+   * tool only partly understood is a verdict about something else. Every problem
+   * id is an incomplete-class rule, so the run says so and exits 2 rather than
+   * reporting a pass on the half it could read.
+   */
+  if (problems.length > 0 || proposedValue === null || criteria.length === 0) {
+    return { worksheet: null, problems }
+  }
 
   return {
     worksheet: Object.freeze({
