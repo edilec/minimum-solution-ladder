@@ -7,11 +7,12 @@
  */
 
 import assert from 'node:assert/strict'
+import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import test from 'node:test'
 
 import { runLadder } from '../src/index.mjs'
-import { cleanup, makeTree, nativeCandidate, runCli, worksheet } from './helpers.mjs'
+import { cleanup, findingFor, makeTree, nativeCandidate, runCli, worksheet } from './helpers.mjs'
 
 const busy = () => worksheet([
   nativeCandidate({ id: 'zulu', rung: 'local-edit' }),
@@ -102,26 +103,35 @@ test('object key order in the report does not depend on the worksheet key order'
 })
 
 test('a second run in the same process does not answer from the first run cache', async (t) => {
-  // The read cache is per-run. One that outlived a run would let one worksheet's
-  // file contents answer another worksheet's question.
-  const first = await makeTree({
+  /**
+   * One root, read twice, with the cited file changed in between.
+   *
+   * Two separate temporary trees -- which is how this was written first -- give
+   * the cache two different keys, since the key is the resolved real path. A
+   * cache that outlived the run would never be consulted, so the assertion below
+   * could not fail however wrong the cache was: making it module-global left all
+   * 162 tests green, this one included, while a second run over a changed file
+   * reported a stale pass.
+   *
+   * The same root is the whole fixture. `before` verifies the marker; the file
+   * then stops containing it; `after` must go and look again.
+   */
+  const root = await makeTree({
     'src/app.mjs': 'export const marker = "the marker"\n',
     'worksheet.json': worksheet([
       nativeCandidate({ evidence: [{ kind: 'source', file: 'src/app.mjs', contains: 'the marker' }] }),
     ], { proposed: { rung: 'platform-native', summary: 'Use it.' } }),
   })
-  const second = await makeTree({
-    'src/app.mjs': 'export const marker = "something else entirely"\n',
-    'worksheet.json': worksheet([
-      nativeCandidate({ evidence: [{ kind: 'source', file: 'src/app.mjs', contains: 'the marker' }] }),
-    ], { proposed: { rung: 'platform-native', summary: 'Use it.' } }),
-  })
-  t.after(() => Promise.all([cleanup(first), cleanup(second)]))
+  t.after(() => cleanup(root))
 
-  const before = await runLadder({ worksheet: join(first, 'worksheet.json'), root: first })
-  const after = await runLadder({ worksheet: join(second, 'worksheet.json'), root: second })
+  const options = { worksheet: join(root, 'worksheet.json'), root }
+  const before = await runLadder(options)
+  await writeFile(join(root, 'src/app.mjs'), 'export const marker = "something else entirely"\n')
+  const after = await runLadder(options)
+
   assert.equal(before.status, 'pass')
-  assert.equal(after.status, 'fail')
+  assert.equal(after.status, 'fail', 'the second run answered from the first run cache')
+  assert.equal(findingFor(after, 'evidence-not-found').location.file, 'src/app.mjs')
 })
 
 test('an unknown option to the library is refused rather than ignored', async (t) => {
