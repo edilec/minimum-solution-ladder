@@ -92,6 +92,34 @@ export const CONTROL_CLASSES = Object.freeze({
 export const EXCERPT_LIMIT = 160
 
 /**
+ * Render a value as text without trusting it to be renderable.
+ *
+ * `String(value)` throws `Cannot convert object to primitive value` for an object
+ * carrying a non-callable own `toString`, and `{"toString": {}}` in a document is
+ * enough to reach it. Uncaught, that costs the whole report: stdout is empty on
+ * exit 2 -- the shape this contract reserves for a configuration error -- and one
+ * malformed document suppresses the findings for every other input in the same
+ * run. Five of the ten tools verified alongside this one aborted on exactly that
+ * value.
+ *
+ * The fix belongs here, at the one boundary every untrusted string already
+ * crosses, rather than at each `String(...)` call site -- a call site that
+ * stringifies before handing the value over has stepped around the boundary, so
+ * none of them do. A value that cannot be rendered is DESCRIBED by its shape,
+ * never reproduced: the shape is all this tool knows, and a neighbouring field of
+ * the same document is none of the report's business.
+ */
+function renderable(value) {
+  if (typeof value === 'string') return value
+  try {
+    return String(value)
+  } catch {
+    if (Array.isArray(value)) return '[array]'
+    return `[${value === null ? 'null' : typeof value}]`
+  }
+}
+
+/**
  * A bounded, single-line, control-free rendering of an untrusted string.
  *
  * Everything that came out of a worksheet passes through here on its way to the
@@ -100,14 +128,14 @@ export const EXCERPT_LIMIT = 160
  */
 export function sanitize(value, limit = EXCERPT_LIMIT) {
   if (!Number.isInteger(limit) || limit < 1) throw new TypeError('Excerpt limit must be a positive integer')
-  const flattened = String(value).replace(CONTROL, ' ').replace(/\s+/g, ' ').trim()
+  const flattened = renderable(value).replace(CONTROL, ' ').replace(/\s+/g, ' ').trim()
   if (flattened.length <= limit) return flattened
   return `${flattened.slice(0, limit)}...`
 }
 
 /** Escape one path segment for a JSON Pointer, per RFC 6901, then sanitise it. */
 export function escapePointerSegment(segment) {
-  return sanitize(String(segment).replaceAll('~', '~0').replaceAll('/', '~1'), 120)
+  return sanitize(renderable(segment).replaceAll('~', '~0').replaceAll('/', '~1'), 120)
 }
 
 const UNPARSEABLE = 'the document could not be parsed as JSON'

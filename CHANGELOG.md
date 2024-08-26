@@ -5,6 +5,18 @@ All notable changes to this package are recorded here. The format follows
 semantic versioning, and **a rule id is part of the public surface** — renaming
 one is a breaking change and is recorded here.
 
+## [Unreleased]
+
+### Fixed
+
+- **A value that cannot be stringified no longer costs the whole report.**
+  `String({"toString": {}})` throws `Cannot convert object to primitive value`,
+  and that value in a document emptied stdout on exit 2 -- the shape reserved for
+  a configuration error -- suppressing every other finding in the run. `sanitize`
+  now describes a value it cannot render by its shape (`[object]`, `[array]`) and
+  never reproduces it, and no call site stringifies before handing a value over.
+  The run reports the input as invalid with status `incomplete`.
+
 ## [0.1.0] - 2026-09-14
 
 First working release.

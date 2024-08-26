@@ -223,7 +223,7 @@ export function validateLimits(overrides = {}) {
 export function validateConfig(config) {
   if (!isRecord(config)) throw new TypeError('Configuration must be a JSON object')
   if (config.schemaVersion !== CONFIG_SCHEMA_VERSION) {
-    throw new TypeError(`Unsupported configuration schemaVersion: ${sanitize(String(config.schemaVersion ?? 'missing'), 40)}`)
+    throw new TypeError(`Unsupported configuration schemaVersion: ${sanitize(config.schemaVersion ?? 'missing', 40)}`)
   }
   for (const key of Object.keys(config)) {
     if (!ALLOWED_CONFIG_KEYS.includes(key)) {
@@ -325,7 +325,7 @@ export async function runLadder(options = {}) {
   try {
     realRoot = await realpath(resolve(rootPath))
   } catch {
-    throw new TypeError(`The root directory could not be resolved: ${sanitize(String(rootPath), 120)}`)
+    throw new TypeError(`The root directory could not be resolved: ${sanitize(rootPath, 120)}`)
   }
   if (!isInside(realRoot, worksheetFull)) {
     throw new TypeError('The worksheet must be inside the root; the root is the boundary of what this run may read.')
@@ -387,7 +387,7 @@ export async function runLadder(options = {}) {
   } catch (error) {
     findings.push(makeFinding(
       'worksheet-unreadable',
-      `The worksheet could not be inspected (${sanitize(String(error.code ?? 'unreadable'), 40)}), so no rung was checked.`,
+      `The worksheet could not be inspected (${sanitize(error.code ?? 'unreadable', 40)}), so no rung was checked.`,
       { file: worksheetFile },
     ))
     return finish({ unexamined: 1 }, null)
@@ -415,7 +415,7 @@ export async function runLadder(options = {}) {
   } catch (error) {
     findings.push(makeFinding(
       'worksheet-unreadable',
-      `The worksheet could not be read (${sanitize(String(error.code ?? 'unreadable'), 40)}), so no rung was checked.`,
+      `The worksheet could not be read (${sanitize(error.code ?? 'unreadable', 40)}), so no rung was checked.`,
       { file: worksheetFile },
     ))
     return finish({ unexamined: 1 }, null)

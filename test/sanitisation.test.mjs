@@ -136,3 +136,78 @@ test('sanitize bounds the length and marks what it cut', () => {
   assert.equal(sanitize(`a${char(0x9b)}b`), 'a b')
   assert.throws(() => sanitize('x', 0), TypeError)
 })
+
+/**
+ * A value that cannot be stringified costs the whole report, not just its field.
+ *
+ * `String({toString: {}})` throws `Cannot convert object to primitive value`, and
+ * every malformed field in this tool is reported by sanitising the value that was
+ * wrong. Uncaught, one such value emptied stdout on exit 2 -- the shape this
+ * contract reserves for a configuration error -- so a consumer could not tell
+ * which input was not read, and every other finding in the same run went with it.
+ *
+ * The guard lives at the sanitising boundary, so these cases walk the three
+ * pointers that reach it and then check the boundary itself: a value it cannot
+ * render is described by its shape, never reproduced, and every value it can
+ * render is untouched. A guard that mangled everything would pass the crash case
+ * on its own.
+ */
+
+const POISON = JSON.parse('{"toString": {}}')
+const SECRET = 'AKIAIOSFODNN7EXAMPLE'
+
+test('String() really does throw on the poison these cases are about', () => {
+  assert.throws(() => String(POISON), TypeError)
+  assert.throws(() => String([POISON]), TypeError)
+})
+
+test('sanitize describes an unstringifiable value by its shape and reproduces nothing', () => {
+  assert.equal(sanitize(POISON), '[object]')
+  assert.equal(sanitize([POISON]), '[array]')
+  assert.equal(sanitize({ toString: {}, secret: SECRET }), '[object]')
+})
+
+test('sanitize leaves every value it can render exactly as it was', () => {
+  assert.equal(sanitize('plain text'), 'plain text')
+  assert.equal(sanitize(42), '42')
+  assert.equal(sanitize(null), 'null')
+  assert.equal(sanitize(undefined), 'undefined')
+  assert.equal(sanitize(false), 'false')
+  assert.equal(sanitize([1, 2]), '1,2')
+  assert.equal(sanitize({ toString: () => 'a real custom toString' }), 'a real custom toString')
+})
+
+for (const [where, document] of [
+  ['/schemaVersion', { schemaVersion: POISON, note: SECRET }],
+  ['/candidates/0/id', JSON.parse(worksheet([nativeCandidate({ id: POISON, summary: SECRET })]))],
+  ['/candidates/0/evidence/0/kind', JSON.parse(worksheet([
+    nativeCandidate({ evidence: [{ kind: POISON, note: SECRET }] }),
+  ]))],
+]) {
+  test(`an unstringifiable value at ${where} is reported, not thrown`, async (t) => {
+    const root = await makeTree({ 'worksheet.json': JSON.stringify(document) })
+    t.after(() => cleanup(root))
+
+    const { report, status, stdout } = runReport(root)
+    assert.equal(status, 2)
+    assert.notEqual(stdout, '', 'an input that could not be interpreted owes a report, not empty stdout')
+    assert.equal(report.status, 'incomplete')
+    assert.ok(report.findings.length > 0, 'the report must say which input was not read')
+    assert.doesNotMatch(stdout, new RegExp(SECRET), 'a neighbouring field is none of the report\'s business')
+  })
+}
+
+test('one unstringifiable value does not suppress the findings for the rest of the document', async (t) => {
+  const root = await makeTree({
+    'worksheet.json': worksheet([
+      nativeCandidate({ id: POISON }),
+      nativeCandidate({ id: 'second', rung: 'not-a-rung' }),
+    ]),
+  })
+  t.after(() => cleanup(root))
+
+  const { report, status } = runReport(root)
+  assert.equal(status, 2)
+  assert.equal(findingFor(report, 'candidate-malformed').evidence, '[object]')
+  assert.equal(findingFor(report, 'candidate-rung-unknown').evidence, 'not-a-rung')
+})

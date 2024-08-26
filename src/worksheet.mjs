@@ -107,7 +107,7 @@ function validateEvidenceItem(item, pointer, problems, { allowAssertion = true }
       ruleId: 'evidence-kind-unknown',
       message: `Evidence kind must be one of ${EVIDENCE_KINDS.join(', ')}.`,
       pointer: `${pointer}/kind`,
-      evidence: sanitize(String(item.kind ?? 'missing'), 60),
+      evidence: sanitize(item.kind ?? 'missing', 60),
     })
     return null
   }
@@ -236,7 +236,7 @@ function validateCandidate(candidate, index, criterionIds, problems, limits) {
       ruleId: 'candidate-malformed',
       message: 'A candidate "id" must match [A-Za-z0-9][A-Za-z0-9._-]{0,63}.',
       pointer: `${pointer}/id`,
-      evidence: sanitize(String(candidate.id ?? 'missing'), 60),
+      evidence: sanitize(candidate.id ?? 'missing', 60),
     })
   }
   if (typeof candidate.rung !== 'string' || !RUNGS.includes(candidate.rung)) {
@@ -245,7 +245,7 @@ function validateCandidate(candidate, index, criterionIds, problems, limits) {
       ruleId: 'candidate-rung-unknown',
       message: `A candidate "rung" must be one of ${RUNGS.join(', ')}.`,
       pointer: `${pointer}/rung`,
-      evidence: sanitize(String(candidate.rung ?? 'missing'), 60),
+      evidence: sanitize(candidate.rung ?? 'missing', 60),
     })
   }
   if (!isText(candidate.summary)) {
@@ -273,7 +273,7 @@ function validateCandidate(candidate, index, criterionIds, problems, limits) {
           ruleId: 'criterion-unknown',
           message: 'A candidate claims a criterion the requirement does not list, so what it covers cannot be judged.',
           pointer: `${pointer}/satisfies/${position}`,
-          evidence: sanitize(String(id ?? 'missing'), 60),
+          evidence: sanitize(id ?? 'missing', 60),
         })
       } else if (satisfies.includes(id)) {
         ok = false
@@ -342,7 +342,7 @@ export function validateWorksheet(document, limits) {
       ruleId: 'worksheet-schema-unsupported',
       message: `This tool reads worksheet schemaVersion "${WORKSHEET_SCHEMA_VERSION}".`,
       pointer: '/schemaVersion',
-      evidence: sanitize(String(document.schemaVersion ?? 'missing'), 40),
+      evidence: sanitize(document.schemaVersion ?? 'missing', 40),
     })
     return { worksheet: null, problems }
   }
@@ -374,7 +374,7 @@ export function validateWorksheet(document, limits) {
         ruleId: 'worksheet-malformed',
         message: 'The requirement "id" must match [A-Za-z0-9][A-Za-z0-9._-]{0,63}.',
         pointer: '/requirement/id',
-        evidence: sanitize(String(requirement.id ?? 'missing'), 60),
+        evidence: sanitize(requirement.id ?? 'missing', 60),
       })
     }
     if (!isText(requirement.statement)) {
@@ -416,7 +416,7 @@ export function validateWorksheet(document, limits) {
             ruleId: 'worksheet-malformed',
             message: 'A criterion "id" must match [A-Za-z0-9][A-Za-z0-9._-]{0,63}.',
             pointer: `${pointer}/id`,
-            evidence: sanitize(String(criterion.id ?? 'missing'), 60),
+            evidence: sanitize(criterion.id ?? 'missing', 60),
           })
           return
         }
@@ -461,7 +461,7 @@ export function validateWorksheet(document, limits) {
         ruleId: 'worksheet-malformed',
         message: `The proposed "rung" must be one of ${RUNGS.join(', ')}.`,
         pointer: '/proposed/rung',
-        evidence: sanitize(String(proposed.rung ?? 'missing'), 60),
+        evidence: sanitize(proposed.rung ?? 'missing', 60),
       })
     } else if (!isText(proposed.summary)) {
       problems.push({

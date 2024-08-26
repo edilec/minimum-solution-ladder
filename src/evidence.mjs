@@ -122,7 +122,7 @@ async function readInsideRoot(file, context) {
     return {
       problem: unknown(
         'evidence-file-unreadable',
-        `the file could not be resolved (${sanitize(String(error.code ?? 'unreadable'), 40)})`,
+        `the file could not be resolved (${sanitize(error.code ?? 'unreadable', 40)})`,
         { file: relativePosix(realRoot, candidate) },
       ),
     }
@@ -148,7 +148,7 @@ async function readInsideRoot(file, context) {
     return {
       problem: unknown(
         'evidence-file-unreadable',
-        `the file could not be inspected (${sanitize(String(error.code ?? 'unreadable'), 40)})`,
+        `the file could not be inspected (${sanitize(error.code ?? 'unreadable', 40)})`,
         { file: reported },
       ),
     }
@@ -173,7 +173,7 @@ async function readInsideRoot(file, context) {
     return {
       problem: unknown(
         'evidence-file-unreadable',
-        `the file could not be read (${sanitize(String(error.code ?? 'unreadable'), 40)})`,
+        `the file could not be read (${sanitize(error.code ?? 'unreadable', 40)})`,
         { file: reported },
       ),
     }
@@ -224,7 +224,7 @@ export async function checkEvidence(item, context) {
     } catch (error) {
       return unknown(
         'evidence-module-unloadable',
-        `the built-in module "${sanitize(item.module, 80)}" would not load on this runtime (${sanitize(String(error?.code ?? 'load failed'), 40)})`,
+        `the built-in module "${sanitize(item.module, 80)}" would not load on this runtime (${sanitize(error?.code ?? 'load failed', 40)})`,
         { file: null },
       )
     }
