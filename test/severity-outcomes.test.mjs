@@ -344,14 +344,21 @@ test('too-many-evidence is an error that makes the run incomplete and exits 2', 
 })
 
 test('unsourced-savings-claim is an error that fails the run and exits 1', async (t) => {
-  const { report, status } = await exercise(t, 'unsourced-savings-claim', {
+  const { report, status, stdout } = await exercise(t, 'unsourced-savings-claim', {
     'worksheet.json': worksheet([
-      nativeCandidate({ savings: { claim: 'Saves most of the effort.' } }),
+      nativeCandidate({ savings: { claim: 'Reusing the platform saves 80% of the effort.' } }),
     ], { proposed: { rung: 'platform-native', summary: 'Call the platform function.' } }),
   })
   assert.equal(findingFor(report, 'unsourced-savings-claim').severity, 'error')
   assert.equal(report.status, 'fail')
   assert.equal(status, 1)
+
+  // The figure is quoted back, because a refusal nobody can read the claim in is
+  // not a readable refusal -- and it appears nowhere else, because this tool
+  // produces no number of its own. The README says exactly this, and used to say
+  // that a measurement backed every number it printed, which is false here.
+  assert.match(findingFor(report, 'unsourced-savings-claim').evidence, /80%/)
+  assert.equal(stdout.split('80%').length - 1, 1)
 })
 
 test('worksheet-malformed is an error that makes the run incomplete and exits 2', async (t) => {

@@ -1,6 +1,28 @@
 #!/usr/bin/env node
 
-import { formatReport, loadConfigFile, runLadder } from '../src/index.mjs'
+import { EXIT_MEANINGS, formatReport, loadConfigFile, runLadder } from '../src/index.mjs'
+
+/**
+ * Wrap one exit-code meaning into the help text's hanging-indent shape.
+ *
+ * The meanings live in `src/index.mjs` and are printed from there rather than
+ * written out again here. A help text carrying its own copy is a second document
+ * that can disagree with the first, which is exactly how this tool came to
+ * promise that exit 0 meant the proposal was verified while its rule table said
+ * otherwise.
+ */
+function exitLine(code, meaning) {
+  const lines = ['']
+  for (const word of meaning.split(' ')) {
+    const current = lines[lines.length - 1]
+    if (current === '') lines[lines.length - 1] = word
+    else if (`${current} ${word}`.length <= 74) lines[lines.length - 1] = `${current} ${word}`
+    else lines.push(word)
+  }
+  return lines.map((line, index) => (index === 0 ? `  ${code}  ${line}` : `     ${line}`)).join('\n')
+}
+
+const EXIT_CODES = Object.keys(EXIT_MEANINGS).map((code) => exitLine(code, EXIT_MEANINGS[code])).join('\n')
 
 const HELP = `minimum-solution-ladder
 
@@ -68,12 +90,7 @@ Every option is accepted once; a repeated flag is a configuration error rather
 than a silent last-wins. An unknown option is refused rather than ignored.
 
 Exit codes:
-  0  the worksheet was checked and the proposal is the smallest verified rung
-  1  the worksheet was checked and it failed: a lower rung covers the
-     requirement, a cited piece of evidence is not there, or a saving was
-     asserted without a measurement
-  2  invalid usage or configuration (no report on stdout), or evidence that was
-     missing, undecodable or bounded out (an "incomplete" report on stdout)
+${EXIT_CODES}
 `
 
 const LIMIT_FLAGS = new Map([

@@ -61,6 +61,36 @@ export const REPORT_SCHEMA_VERSION = '1'
 export const CONFIG_SCHEMA_VERSION = '1'
 
 /**
+ * What each exit code means, written once.
+ *
+ * The help text and the README both used to say their own version of this, and
+ * the two disagreed: the exit-code table promised that 0 meant "the proposal is
+ * the smallest verified rung", while the rule table -- correctly -- documented
+ * `proposal-unverified` and `no-candidate-fully-covers` as passing. Both of
+ * those exit 0 having verified nothing about the proposal at all, one of them
+ * saying so in its own message, so a consumer keying on the exit code read green
+ * for a proposal this tool never reached.
+ *
+ * The behaviour was right and the sentence was wrong: a run that could not
+ * challenge the proposal has not found the proposal wanting, and evidence that
+ * was not obtained is `incomplete` and exits 2 long before this. So the sentence
+ * is corrected rather than the rule, and it lives here, where `--help` prints it
+ * and `test/rule-catalog.test.mjs` compares it against the README row. Two
+ * documents cannot drift apart when there is only one of them.
+ */
+export const EXIT_MEANINGS = Object.freeze({
+  0: 'The worksheet was checked and nothing in it refutes the proposal: no verified '
+    + 'candidate reaches a rung below it, every cited piece of evidence was there, and no '
+    + 'saving was asserted without a measurement. It is not a claim that the proposal '
+    + 'itself was verified -- proposal-unverified and no-candidate-fully-covers both exit '
+    + '0 and both say so in the report.',
+  1: 'The worksheet was checked and it failed: a lower rung covers the requirement, a '
+    + 'cited piece of evidence is not there, or a saving was asserted without a measurement.',
+  2: 'Invalid usage or configuration, where stdout is empty -- or evidence that was '
+    + 'missing, undecodable or bounded out, which puts an incomplete report on stdout.',
+})
+
+/**
  * Bounds are part of the contract, not a safety net.
  *
  * A worksheet is ordinary untrusted input: it can declare a thousand

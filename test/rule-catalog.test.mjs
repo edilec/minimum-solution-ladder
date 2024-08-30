@@ -15,7 +15,8 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
-import { DEFAULT_LIMITS, INCOMPLETE_RULES, RULE_SEVERITY, RUNGS, TOOL_ID } from '../src/index.mjs'
+import { DEFAULT_LIMITS, EXIT_MEANINGS, INCOMPLETE_RULES, RULE_SEVERITY, RUNGS, TOOL_ID } from '../src/index.mjs'
+import { runCli } from './helpers.mjs'
 
 const read = (name) => readFile(new URL(`../${name}`, import.meta.url), 'utf8')
 
@@ -107,4 +108,52 @@ test('the README does not promise an output file this tool does not write', asyn
   // catalog counts as a defect; saying there is no such flag is not.
   assert.doesNotMatch(readme, /^ *\| `--out/m)
   assert.doesNotMatch(readme, /--out [A-Z]/)
+})
+
+
+/**
+ * The exit-code documents, which disagreed with each other and with the tool.
+ *
+ * The README's row for `0` said the proposal was "the smallest verified rung"
+ * while the rule table on the same page documented `proposal-unverified` and
+ * `no-candidate-fully-covers` as passing -- and both of those exit 0 having
+ * verified nothing about the proposal. A consumer keying on the exit code read
+ * green for a proposal this run never reached.
+ *
+ * The behaviour is right: a run that cannot challenge the proposal has not found
+ * it wanting, and evidence that was not obtained is `incomplete` and exits 2
+ * long before this. So the sentence was corrected, not the rule -- and there is
+ * now one sentence, printed by `--help` and asserted here against the README.
+ */
+
+const normalise = (text) => text.replace(/\s+/g, ' ').trim()
+
+test('the README exit-code table is the table the tool prints', async () => {
+  const rows = [...(await read('README.md')).matchAll(/^\| `(\d)` \| (.+?) \|$/gm)]
+  assert.equal(rows.length, Object.keys(EXIT_MEANINGS).length)
+
+  const help = normalise(runCli(['--help']).stdout)
+  for (const [, code, meaning] of rows) {
+    assert.equal(normalise(meaning), normalise(EXIT_MEANINGS[code]), `the README row for exit ${code} is not the tool's`)
+    assert.equal(help.includes(normalise(EXIT_MEANINGS[code])), true, `--help does not print the meaning of exit ${code}`)
+  }
+})
+
+test('nothing claims exit 0 means the proposal itself was verified', async () => {
+  // The two rules that pass without verifying the proposal are pinned
+  // behaviourally in test/severity-outcomes.test.mjs; this is the document half
+  // of the same guarantee, and it is the half that was wrong.
+  const readme = await read('README.md')
+  assert.doesNotMatch(readme, /smallest verified rung/)
+  assert.doesNotMatch(runCli(['--help']).stdout, /smallest verified rung/)
+  assert.match(normalise(EXIT_MEANINGS[0]), /not a claim that the proposal itself was verified/)
+})
+
+test('the README does not promise a measurement behind every number it prints', async () => {
+  // An unsourced savings claim is quoted back in the finding that refuses it --
+  // showing the figure is what makes the refusal readable -- so "if a number
+  // appears in its output, a measurement backs it" was false on that path.
+  const readme = await read('README.md')
+  assert.doesNotMatch(readme, /a measurement\s+backs it/)
+  assert.match(readme, /unsourced-savings-claim/)
 })

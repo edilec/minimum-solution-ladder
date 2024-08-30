@@ -16,6 +16,31 @@ one is a breaking change and is recorded here.
   now describes a value it cannot render by its shape (`[object]`, `[array]`) and
   never reproduces it, and no call site stringifies before handing a value over.
   The run reports the input as invalid with status `incomplete`.
+- **The documented meaning of exit 0 was not true.** The help text and the
+  README's exit-code table both said exit 0 meant "the proposal is the smallest
+  verified rung", while the rule table on the same page correctly documented
+  `proposal-unverified` and `no-candidate-fully-covers` as passing -- and both of
+  those exit 0 having verified nothing about the proposal, one of them saying so
+  in its own message. The behaviour is right and stays: a run that could not
+  challenge the proposal has not found it wanting, and evidence that was not
+  obtained is `incomplete` and exits 2 long before this. The sentence is
+  corrected, and there is now one of it: `EXIT_MEANINGS` in `src/index.mjs`, which
+  `--help` prints and `test/rule-catalog.test.mjs` asserts the README against.
+- **The README promised a measurement behind every number in the output.** On the
+  `unsourced-savings-claim` path the figure is quoted back in the finding that
+  refuses it -- which is what makes the refusal readable -- and nothing measures
+  it. The non-goals bullet now says what actually happens; the rule is unchanged,
+  and `test/severity-outcomes.test.mjs` asserts the figure appears in that
+  finding's evidence and nowhere else in the report.
+
+### Notes
+
+- The determinism suite's "a second run in the same process does not answer from
+  the first run cache" built two separate temporary trees, so the read cache --
+  keyed by resolved real path -- could never have been consulted and the test
+  could not fail: making the cache module-global left the whole suite green while
+  a second run over a changed file reported a stale pass. The test now reads one
+  root twice with the cited file changed in between.
 
 ## [0.1.0] - 2026-09-14
 

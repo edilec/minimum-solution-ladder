@@ -166,11 +166,17 @@ only agree with each other can be edited together.
 
 ## Exit codes
 
+The rows below are printed by `--help` from one frozen table in `src/index.mjs`,
+so this document and the tool cannot say different things about an exit code —
+which they did, until the row for `0` claimed the proposal had been verified
+while the rule table below correctly documented two rules that pass without
+verifying it.
+
 | Code | Meaning |
 | ---: | --- |
-| `0` | The worksheet was checked and the proposal is the smallest verified rung. |
+| `0` | The worksheet was checked and nothing in it refutes the proposal: no verified candidate reaches a rung below it, every cited piece of evidence was there, and no saving was asserted without a measurement. It is not a claim that the proposal itself was verified -- proposal-unverified and no-candidate-fully-covers both exit 0 and both say so in the report. |
 | `1` | The worksheet was checked and it failed: a lower rung covers the requirement, a cited piece of evidence is not there, or a saving was asserted without a measurement. |
-| `2` | Invalid usage or configuration — **stdout is empty** — or evidence that was missing, undecodable or bounded out, which puts an `incomplete` report on stdout. |
+| `2` | Invalid usage or configuration, where stdout is empty -- or evidence that was missing, undecodable or bounded out, which puts an incomplete report on stdout. |
 
 The two shapes of exit 2 are deliberate. A configuration error means the run
 never had a subject, so there is nothing to report about. An input that could not
@@ -212,8 +218,10 @@ unknown key in either is refused.
   cannot see — licence, performance, an upcoming deprecation. It reports which
   rungs are reachable and leaves the decision where it belongs.
 - **It estimates nothing.** No effort, no hours, no percentage, no line counts.
-  If a number appears in its output, the worksheet put it there and a measurement
-  backs it.
+  Every number in its output came out of the worksheet: either from a measurement
+  this tool opened and checked, or quoted back inside an `unsourced-savings-claim`
+  finding as the figure being refused — showing the claim is how that refusal is
+  readable. It produces no number of its own.
 - **The confinement is the `--root` tree**, resolved, not spelled. It does not
   sandbox the process; it refuses to read outside the root it was given.
 
