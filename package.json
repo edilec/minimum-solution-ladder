@@ -1,0 +1,53 @@
+{
+  "name": "minimum-solution-ladder",
+  "version": "0.1.0",
+  "description": "Check a change proposal against the solution ladder -- no change, project reuse, standard library, native platform, installed dependency, smallest local edit, new machinery -- crediting a rung only on evidence the tool obtained itself, and inventing no savings figures.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "lint": "node --check bin/minimum-solution-ladder.mjs && node --check src/evidence.mjs && node --check src/index.mjs && node --check src/text.mjs && node --check src/worksheet.mjs && node --check test/acceptance.test.mjs && node --check test/cli.test.mjs && node --check test/confinement.test.mjs && node --check test/determinism.test.mjs && node --check test/helpers.mjs && node --check test/incomplete.test.mjs && node --check test/limits.test.mjs && node --check test/ordering.test.mjs && node --check test/parse-failure.test.mjs && node --check test/rule-catalog.test.mjs && node --check test/sanitisation.test.mjs && node --check test/severity-outcomes.test.mjs && node --check test/text.test.mjs && node --check test/worksheet.test.mjs",
+    "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=src/**",
+    "example": "node bin/minimum-solution-ladder.mjs --worksheet examples/debounce-search/worksheet.json",
+    "example:failing": "node bin/minimum-solution-ladder.mjs --worksheet examples/uuid-generation/worksheet.json --json; test $? -eq 1",
+    "example:incomplete": "node bin/minimum-solution-ladder.mjs --worksheet examples/asserted-only/worksheet.json; test $? -eq 2",
+    "pack:check": "npm pack --dry-run",
+    "check": "npm run lint && npm test && npm run example && npm run example:failing && npm run example:incomplete && npm run pack:check"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edilec/minimum-solution-ladder.git"
+  },
+  "bin": {
+    "minimum-solution-ladder": "./bin/minimum-solution-ladder.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "examples",
+    "docs",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "agent-workflow",
+    "decision-record",
+    "dependency-hygiene",
+    "evidence",
+    "minimal-change",
+    "static-analysis",
+    "cli"
+  ],
+  "author": "Edilec Private Limited",
+  "bugs": {
+    "url": "https://github.com/edilec/minimum-solution-ladder/issues"
+  },
+  "homepage": "https://github.com/edilec/minimum-solution-ladder#readme"
+}
