@@ -5,7 +5,7 @@ All notable changes to this package are recorded here. The format follows
 semantic versioning, and **a rule id is part of the public surface** — renaming
 one is a breaking change and is recorded here.
 
-## [Unreleased]
+## [0.1.0] - 2026-10-14
 
 ### Fixed
 
@@ -42,7 +42,7 @@ one is a breaking change and is recorded here.
   a second run over a changed file reported a stale pass. The test now reads one
   root twice with the cited file changed in between.
 
-## [0.1.0] - 2026-09-14
+Initial implementation (recorded 2026-09-14):
 
 First working release.
 
